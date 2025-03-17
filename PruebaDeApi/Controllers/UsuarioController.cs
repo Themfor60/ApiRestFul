@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Server.Kestrel.Core.Features;
 using Microsoft.EntityFrameworkCore;
 using PruebaDeApi.Data;
 using PruebaDeApi.Models;
 
 namespace PruebaDeApi.Controllers
 {
-   /*
-    * Creado por Uriel Aquino, Api RestFul Basico para CRUD
-    */
+    /*
+     * Creado por Uriel Aquino, Api RestFul Basico para CRUD
+     */
     [Route("api/[controller]")]
     [ApiController]
     public class UsuarioController : ControllerBase
@@ -20,89 +23,136 @@ namespace PruebaDeApi.Controllers
         }
 
 
-        //EndPoint de generar una lista de usuarios
+        //Obtener Listado
         [HttpGet]
-        public async Task <IActionResult> ListaUsuarioGet()
+        public async Task<IActionResult> ListaUsuario()
         {
             try
             {
-                var usuario = await _Context.Usuarios.ToArrayAsync();
-                return Ok(usuario);
+                var usuarios = await _Context.Usuarios.ToListAsync();
+                return Ok(usuarios);
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                return StatusCode(500, $"Error interno del sistema: { ex.Message}");
+                return StatusCode(500, $"Error del sistema interno: {ex.Message} ");
             }
-
         }
 
-        //EndPoint de obtener detalle del usuario 
+
+        //Obtner Id del listado osea detalle
         [HttpGet("{id}")]
-        public async Task<IActionResult> DetalleUsuarioGet(int id) 
+        public async Task<IActionResult> DetalleUsuario(int id)
         {
-            if (id < 0) 
+            if (id < 0)
             {
-                return BadRequest("Id no valido");
+                return BadRequest("400, Id no encontrado");
             }
             try
             {
-                var DetalleUsuario = _Context.Usuarios.Find(id);
-                return Ok(DetalleUsuario);
+                var usurio = await _Context.Usuarios.FindAsync(id);
+                if (usurio == null)
+                {
+                    return NotFound("404, Usuario no encontrado");
+                }
+                return Ok(usurio);
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
-                return StatusCode(500, $"Error Intero del sistema {ex.Message}");
+                return StatusCode(500, $"Error del sistmea: {ex.Message}");
             }
         }
 
-        //EndPoint de Modificar el usuario
+
+        //Crear Nuevo Usuario
+
         [HttpPost("{id}")]
-        public async Task<IActionResult> ModificarUsuario(int id, Usuario usuario) 
+        public async Task<IActionResult> CrearUsuario(Usuario usuario)
         {
-            if (id < 0) 
+            if (ModelState.IsValid)
             {
-                return BadRequest("El id no coincide");
+                return BadRequest(ModelState);
             }
             try
             {
-                var EditarUsuario = _Context.Usuarios.Find(id);
-                if (EditarUsuario == null)
-                {
-                    return BadRequest("Usuario no encontrado");
-                }
-
-                _Context.Usuarios.Update(usuario);
+                var usuarios = _Context.Usuarios.Add(usuario);
                 await _Context.SaveChangesAsync();
-                return NoContent();
+                return Ok(usuario);
 
             }
-            catch (Exception ex) 
-            {
-                return StatusCode(500, $"Problema en el sistema: {ex.Message}");
-            }
-        }
-
-
-        //EndPoint de Borrar Usuario 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUsuario(int id) 
-        {
-            try
-            {
-                var Borrar = _Context.Usuarios.Find(id);
-                if (Borrar == null)
-                {
-                    return BadRequest("Id no coindice");
-                }
-                _Context.Usuarios.Remove(Borrar);
-                await _Context.SaveChangesAsync();
-                return NoContent();
-            }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 return StatusCode(500, $"Error del sistema: {ex.Message}");
             }
         }
+
+        //Editar Usuario
+        [HttpPut("{id}")]
+        public async Task<IActionResult> EditarUsuario(int id, Usuario usuario)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            if (id <= 0)
+            {
+                return BadRequest("Id no válido");
+            }
+
+            try
+            {
+                var usuarioExistente = await _Context.Usuarios.FindAsync(id);
+                if (usuarioExistente == null)
+                {
+                    return NotFound("Usuario no encontrado");
+                }
+
+
+                usuarioExistente.Nombre = usuario.Nombre;
+                usuarioExistente.Apellido = usuario.Apellido;
+                usuarioExistente.Telefono = usuario.Telefono;
+                usuarioExistente.direccion = usuario.direccion;
+
+                _Context.Usuarios.Update(usuarioExistente);
+                await _Context.SaveChangesAsync();
+
+                return Ok(usuarioExistente);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error del sistema: {ex.Message}");
+            }
+        }
+
+
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> BorrarUsuario(int id) 
+        {
+            if (id <= 0) 
+            {
+                return BadRequest("Id  no encotrado");
+            }
+
+            try
+            {
+                var usuarioExiste = await _Context.Usuarios.FindAsync(id);
+                if (usuarioExiste == null)
+                {
+                    return NotFound("No encontrado");
+                }
+
+                _Context.Usuarios.Remove(usuarioExiste);
+                await _Context.SaveChangesAsync();
+
+                return Ok($"Usuario con Id {id} eliminado correctamente");
+            }
+            catch (Exception ex) 
+            {
+                return StatusCode(500, $"Error del sistema {ex.Message}");
+            }
+        }
+
 
     }
 }
