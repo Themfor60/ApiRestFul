@@ -65,16 +65,16 @@ namespace PruebaDeApi.Controllers
 
         //Crear Nuevo Usuario
 
-        [HttpPost("{id}")]
+        [HttpPost]
         public async Task<IActionResult> CrearUsuario(Usuario usuario)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
             try
             {
-                var usuarios = _Context.Usuarios.Add(usuario);
+                 _Context.Usuarios.Add(usuario);
                 await _Context.SaveChangesAsync();
                 return Ok(usuario);
 
